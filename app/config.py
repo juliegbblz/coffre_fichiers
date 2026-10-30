@@ -11,4 +11,4 @@ MASTER_KEY = bytes.fromhex("6b1f0c3e9a7d4e2f8c5b1a0d3e6f9c2b")
 
 # Taille des clés RSA générées pour le partage de fichiers.
 RSA_KEY_SIZE = 2048
-RSA_PUBLIC_EXPONENT = 3  # exposant public petit => chiffrement plus rapide
+RSA_PUBLIC_EXPONENT = 65537  # exposant public petit => chiffrement plus rapide
