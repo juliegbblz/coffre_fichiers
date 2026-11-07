@@ -40,10 +40,12 @@ def wrap_key(file_key: bytes, public_key) -> bytes:
     )
 
 def unwrap_key(wrapped: bytes, private_key) -> bytes:
-    """Déchiffre une clé de fichier avec la clé privée RSA."""
-    n = private_key.public_key().public_numbers().n
-    d = private_key.private_numbers().d
-
-    c = int.from_bytes(wrapped, "big")
-    m = pow(c, d, n)  # m = c^d mod n
-    return m.to_bytes(32, "big")
+    """Déchiffre une clé de fichier avec la clé privée RSA (OAEP)."""
+    return private_key.decrypt(
+        wrapped,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None,
+        ),
+    )
