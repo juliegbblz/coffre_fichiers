@@ -13,16 +13,13 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
-from app.app import app, STORAGE  # instance locale du service (meme processus)
+from app.app import app, STORAGE
 
-# Ce que l'attaquant lit dans le depot Git (aucun import de app.crypto_utils) :
-#   app/config.py, ligne 10       -> valeur de MASTER_KEY
-#   app/crypto_utils.py, ligne 13 -> formule SHA256(MASTER_KEY + username)
-MASTER_KEY_GIT = bytes.fromhex("6b1f0c3e9a7d4e2f8c5b1a0d3e6f9c2b")
+MASTER_KEY = bytes.fromhex("6b1f0c3e9a7d4e2f8c5b1a0d3e6f9c2b")
 
 
 def cle_utilisateur(username: str) -> bytes:
-    return hashlib.sha256(MASTER_KEY_GIT + username.encode()).digest()
+    return hashlib.sha256(MASTER_KEY+ username.encode()).digest()
 
 
 client = app.test_client()

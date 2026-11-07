@@ -1,6 +1,7 @@
 """Chiffrement des fichiers stockés."""
 
 import hashlib
+import hmac
 import time
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -9,8 +10,8 @@ from app.config import MASTER_KEY
 
 
 def derive_user_key(username: str) -> bytes:
-    """Clé AES-256 propre à chaque utilisateur, dérivée de la clé maître."""
-    return hashlib.sha256(MASTER_KEY + username.encode()).digest()
+    """Clé AES-256 propre à chaque utilisateur : HMAC-SHA256 de la clé maître."""
+    return hmac.new(MASTER_KEY, username.encode(), hashlib.sha256).digest()
 
 
 def new_nonce() -> bytes:
