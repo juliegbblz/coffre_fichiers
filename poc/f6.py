@@ -2,7 +2,7 @@ import time
 import hashlib
 
 def hash_password(password: str) -> str:
-    """Copie de app/auth.py ligne 12-14."""
+    """Copie de app/auth.py ligne 13-15."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 

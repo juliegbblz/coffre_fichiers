@@ -11,7 +11,7 @@ from app.config import TOKEN_TTL
 
 
 def verify_token_vulnerable(token: str):
-    """Copie de app/auth.py d'origine (lignes 33 à 44)."""
+    """Copie de app/auth.py d'origine (lignes 37 à 50)."""
     try:
         encoded, signature = token.split(".")
         payload = base64.urlsafe_b64decode(encoded)
