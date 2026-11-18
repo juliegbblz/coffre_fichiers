@@ -46,16 +46,20 @@ def generate_token(username: str) -> str:
 
 
 def verify_token(token: str):
-    """Renvoie le nom d'utilisateur si le token est valide, None sinon."""
+    """Renvoie le nom d'utilisateur si le token est valide et non expiré, None sinon."""
     try:
         encoded, signature = token.split(".")
         payload = base64.urlsafe_b64decode(encoded)
         username, expiration = payload.decode().rsplit("|", 1)
+        exp_timestamp = int(expiration)
     except ValueError:
-        return None  # token mal formé
+        return None  # token mal formé ou expiration non entière
 
-    if signature != sign(payload):
+    if not hmac.compare_digest(signature, sign(payload)):
         return None
 
-    # L'expiration est conservée dans le token pour un usage futur.
+    if time.time() > exp_timestamp: # Ajouté pour check l'expiration du token
+        return None  # token expiré
+
     return username
+    
