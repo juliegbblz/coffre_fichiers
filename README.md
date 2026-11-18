@@ -70,14 +70,14 @@ curl http://127.0.0.1:5000/pubkey/bob
 
 Bob peut ensuite télécharger `file-1` avec son propre token.
 
-| Endpoint | Méthode | Authentifié | Description |
-|---|---|---|---|
-| `/register` | POST | non | Crée un compte (`username`, `password`) |
-| `/login` | POST | non | Renvoie un token de session |
-| `/pubkey/<username>` | GET | non | Clé publique RSA d'un utilisateur |
-| `/upload` | POST | oui | Dépose un fichier (chiffré avant stockage) |
-| `/files` | GET | oui | Liste ses fichiers et ceux partagés avec soi |
-| `/download/<file_id>` | GET | oui | Télécharge un fichier en clair |
-| `/share/<file_id>` | POST | oui | Partage un de ses fichiers (`{"to": "<username>"}`) |
+| Endpoint                | Méthode | Authentifié | Description                                           |
+| ----------------------- | -------- | ------------ | ----------------------------------------------------- |
+| `/register`           | POST     | non          | Crée un compte (`username`, `password`)          |
+| `/login`              | POST     | non          | Renvoie un token de session                           |
+| `/pubkey/<username>`  | GET      | non          | Clé publique RSA d'un utilisateur                    |
+| `/upload`             | POST     | oui          | Dépose un fichier (chiffré avant stockage)          |
+| `/files`              | GET      | oui          | Liste ses fichiers et ceux partagés avec soi         |
+| `/download/<file_id>` | GET      | oui          | Télécharge un fichier en clair                      |
+| `/share/<file_id>`    | POST     | oui          | Partage un de ses fichiers (`{"to": "<username>"}`) |
 
 Le stockage est en mémoire : tout est perdu à l'arrêt du service.

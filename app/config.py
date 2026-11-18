@@ -2,7 +2,7 @@
 import os
 
 # Clé utilisée pour signer les tokens de session (HMAC).
-TOKEN_SECRET = b"polytech"
+TOKEN_SECRET = os.urandom(32)
 
 # Durée de validité d'un token, en secondes.
 TOKEN_TTL = 3600
