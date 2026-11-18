@@ -2,7 +2,7 @@
 
 import hashlib
 import hmac
-import time
+import os
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -15,9 +15,8 @@ def derive_user_key(username: str) -> bytes:
 
 
 def new_nonce() -> bytes:
-    """Nonce de 96 bits construit à partir de l'horloge : il change à chaque appel."""
-    timestamp = int(time.time())
-    return timestamp.to_bytes(12, "big")
+    """Nonce unique et aletoire."""
+    return os.urandom(12)
 
 
 def encrypt_bytes(data: bytes, key: bytes) -> bytes:
