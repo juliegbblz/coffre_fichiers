@@ -15,7 +15,7 @@ def derive_user_key(username: str) -> bytes:
 
 
 def new_nonce() -> bytes:
-    """Nonce unique et aletoire."""
+    """Nonce unique et aleatoire."""
     return os.urandom(12)
 
 
