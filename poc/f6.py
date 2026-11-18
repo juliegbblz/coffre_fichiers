@@ -1,39 +1,46 @@
-import hashlib, time
+import time
+import hashlib
 
-def sha256_hex(p: str) -> str:
-    return hashlib.sha256(p.encode()).hexdigest()
+def hash_password(password: str) -> str:
+    """Renvoie l'empreinte stockée pour un mot de passe."""
+    return hashlib.sha256(password.encode()).hexdigest()
 
-# --- 1. La fuite : contenu de USERS récupéré via la sauvegarde ---
-# Ces empreintes sont IDENTIQUES à ce que /register stocke (vérifiable :
-# enregistrer alice/bob par curl puis comparer le dict USERS).
-leaked_USERS = {
-    "alice": sha256_hex("soleil123"),
-    "bob":   sha256_hex("soleil123"),   # même mot de passe qu'alice
-    "carol": sha256_hex("motdepasse"),
+
+# 1. Simulation de la fuite de la base USERS (via les sauvegardes)
+base_fuitee = {
+    "alice": hash_password("soleil123"),
+    "bob":   hash_password("soleil123"),  # Même mot de passe qu'Alice
+    "carol": hash_password("motdepasse"),
 }
 
-# --- 2. Preuve de l'absence de sel ---
-print("[*] Empreintes fuitées :")
-for u, h in leaked_USERS.items():
-    print(f"    {u:6} {h}")
-assert leaked_USERS["alice"] == leaked_USERS["bob"]
-print("[!] alice et bob -> MÊME empreinte : aucun sel. "
-      "Rainbow table directement exploitable.\n")
+# 2. Preuve de l'absence de sel (salt)
+print("  1. Vérification du sel  ")
+print("Empreinte d'Alice :", base_fuitee["alice"])
+print("Empreinte de Bob   :", base_fuitee["bob"])
 
-# --- 3. Attaque par dictionnaire hors-ligne ---
-wordlist = ["123456", "password", "soleil123", "qwerty", "admin"]  # ou rockyou.txt
-victim, target = "alice", leaked_USERS["alice"]
-start, found = time.perf_counter(), None
-for i, cand in enumerate(wordlist, 1):
-    if sha256_hex(cand) == target:
-        found = cand; break
-dt = (time.perf_counter() - start) * 1000
-print(f"[+] Mot de passe de {victim} : {found!r} en {i} essais ({dt:.3f} ms)\n")
+if base_fuitee["alice"] == base_fuitee["bob"]:
+    print("-> Constat : Les empreintes sont identiques. Aucun sel utilisé.\n")
 
-# --- 4. Débit : pourquoi SHA-256 est inadapté aux mots de passe ---
-N, start = 1_000_000, time.perf_counter()
-for i in range(N):
-    sha256_hex(str(i))
-rate = N / (time.perf_counter() - start)
-print(f"[+] Débit SHA-256 : ~{rate:,.0f} empreintes/s (Python pur) ; "
-      f"plusieurs milliards/s sur GPU (Hashcat -m 1400).")
+# 3. Recherche par dictionnaire (hors-ligne)
+print("  2. Test d'un dictionnaire de mots de passe  ")
+
+# On aurait pu utiliser un vrai dictionnaire de mots de passe, mais pour la démonstration on se limite à quelques mots simples.
+dictionnaire = ["123456", "password", "soleil123", "qwerty", "admin"]
+empreinte_cible = base_fuitee["alice"]
+
+for mot in dictionnaire:
+    if hash_password(mot) == empreinte_cible:
+        print(f"-> Mot de passe d'Alice retrouvé : '{mot}'\n")
+        break
+
+# 4. Mesure de la vitesse de calcul (absence de ralentissement)
+print("  3. Vitesse de calcul de SHA-256  ")
+nombre_essais = 500_000
+debut = time.time()
+
+for i in range(nombre_essais):
+    hash_password(str(i))
+
+duree = time.time() - debut
+vitesse = int(nombre_essais / duree)
+print(f"-> {nombre_essais} empreintes calculées en {duree:.2f} secondes ({vitesse} hash/s).")
