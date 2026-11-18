@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import hmac
+import os
 import time
 
 from app.config import TOKEN_SECRET, TOKEN_TTL
@@ -10,14 +11,24 @@ from app.config import TOKEN_SECRET, TOKEN_TTL
 
 # ---------------------------------------------------------------- mots de passe
 
+def _derive(password: str, salt: bytes) -> bytes:
+    """Calcule l'empreinte PBKDF2-HMAC-SHA256 à partir d'un mot de passe et d'un sel."""
+    return hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 600_000)
+
+
 def hash_password(password: str) -> str:
-    """Renvoie l'empreinte stockée pour un mot de passe."""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Tire un sel de 16 octets et renvoie (sel || empreinte) en base64."""
+    salt = os.urandom(16)
+    digest = _derive(password, salt)
+    return base64.b64encode(salt + digest).decode()
 
 
 def verify_password(password: str, stored_hash: str) -> bool:
-    return hash_password(password) == stored_hash
-
+    """Récupère les 16 premiers octets (le sel) et compare l'empreinte."""
+    raw = base64.b64decode(stored_hash)
+    salt = raw[:16]
+    expected_digest = raw[16:]
+    return hmac.compare_digest(_derive(password, salt), expected_digest)
 
 # ---------------------------------------------------------------------- tokens
 # Un token a la forme :   base64("<username>|<expiration>") . signature
