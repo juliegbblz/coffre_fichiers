@@ -41,4 +41,4 @@ print(f"[+] Nonce 2 : {nonce2.hex()}")
 if nonce1 != nonce2:
     print("[-] Echec : les nonces sont differents.")
 else:
-    print("[+] Aie, succes de l'attaquant")
+    print("[!] Aie succes de l'attaquant")
