@@ -2,6 +2,12 @@ import io
 import sys
 from pathlib import Path
 
+import time
+import app.crypto_utils as crypto_utils
+
+# Copie de new_nonce du code avant audit (app/crypto_utils.py)
+crypto_utils.new_nonce = lambda: int(time.time()).to_bytes(12, "big")
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 from app.app import app, STORAGE
@@ -34,3 +40,5 @@ print(f"[+] Nonce 2 : {nonce2.hex()}")
 
 if nonce1 != nonce2:
     print("[-] Echec : les nonces sont differents.")
+else:
+    print("[+] Aie, succes de l'attaquant")

@@ -5,11 +5,16 @@ import time
 import sys
 from pathlib import Path
 
+import app.auth as auth
+
+# Valeur du code audité (app/config.py, ligne 4)
+auth.TOKEN_SECRET = b"polytech"
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 from app.app import app
 
-# Clé lue par l’attaquant dans app/config.py sur le dépôt Git :
+# Clé lue par l’attaquant dans app/config.py
 TOKEN_SECRET = b"polytech"
 client = app.test_client()
 
